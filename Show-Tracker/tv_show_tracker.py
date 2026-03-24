@@ -9,7 +9,6 @@ INPUT_CSV = "shows.csv"
 OUTPUT_CSV = "shows_updated.csv"
 REQUEST_DELAY_SECONDS = 0.25
 
-
 def safe_get(url: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict[str, Any]]:
     """Fetch JSON from TVmaze and return None on failure."""
     try:
@@ -20,7 +19,6 @@ def safe_get(url: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict
     except requests.RequestException:
         return None
 
-
 def _normalize_name_with_year(show_name: str) -> (str, Optional[int]):
     """Extract base name and optional year string from values like 'Doctor Who (2023)'."""
     import re
@@ -30,7 +28,6 @@ def _normalize_name_with_year(show_name: str) -> (str, Optional[int]):
     if match:
         return match.group(1).strip(), int(match.group(2))
     return candidate, None
-
 
 def search_show(show_name: str) -> Optional[Dict[str, Any]]:
     """
@@ -69,13 +66,11 @@ def search_show(show_name: str) -> Optional[Dict[str, Any]]:
     # Otherwise use the first result
     return shows[0] if shows else None
 
-
 def get_show_details(show_id: int) -> Optional[Dict[str, Any]]:
     """
     Get show details including embedded next and previous episode.
     """
     return safe_get(f"{BASE_URL}/shows/{show_id}", params={"embed[]": ["nextepisode", "previousepisode"]})
-
 
 def get_show_seasons(show_id: int) -> List[Dict[str, Any]]:
     """
@@ -83,7 +78,6 @@ def get_show_seasons(show_id: int) -> List[Dict[str, Any]]:
     """
     data = safe_get(f"{BASE_URL}/shows/{show_id}/seasons")
     return data if isinstance(data, list) else []
-
 
 def find_next_season_airdate(
     seasons: List[Dict[str, Any]],
@@ -127,7 +121,6 @@ def find_next_season_airdate(
 
     return None
 
-
 def normalize_status(
     api_status: Optional[str],
     next_episode: Optional[Dict[str, Any]]
@@ -153,26 +146,20 @@ def normalize_status(
     # Unknown statuses fall back to unconfirmed
     return "unconfirmed"
 
-
 def process_show(show_name: str) -> Dict[str, str]:
     """
     Build one output row for a show.
     """
     row = {
         "show_name": show_name,
-        "found_title": "",
         "tvmaze_status": "",
-        "status_bucket": "",
         "next_known_airdate": "",
-        "next_season_airdate": "",
-        "notes": "",
     }
 
     show = search_show(show_name)
     time.sleep(REQUEST_DELAY_SECONDS)
 
     if not show:
-        row["notes"] = "Show not found"
         return row
 
     show_id = show.get("id")
@@ -197,23 +184,10 @@ def process_show(show_name: str) -> Dict[str, str]:
     next_known_airdate = next_episode.get("airdate") if next_episode else None
     next_season_airdate = find_next_season_airdate(seasons, previous_season_number, next_episode)
 
-    row["found_title"] = details.get("name", "")
     row["tvmaze_status"] = details.get("status", "")
-    row["status_bucket"] = normalize_status(details.get("status"), next_episode)
     row["next_known_airdate"] = next_known_airdate or ""
-    row["next_season_airdate"] = next_season_airdate or ""
-
-    if row["status_bucket"] == "Running" and not row["next_known_airdate"]:
-        row["notes"] = "Show is marked running, but no next episode is currently listed"
-    elif row["status_bucket"] == "Renewed" and not row["next_season_airdate"]:
-        row["notes"] = "Upcoming episode exists, but next season premiere is not clearly identifiable"
-    elif row["status_bucket"] == "To Be Determined":
-        row["notes"] = "Future season/episode not yet confirmed"
-    elif row["status_bucket"] == "Ended":
-        row["notes"] = "Show appears ended"
 
     return row
-
 
 def read_input_csv(filename: str) -> List[str]:
     """
@@ -228,26 +202,20 @@ def read_input_csv(filename: str) -> List[str]:
                 show_names.append(name)
     return show_names
 
-
 def write_output_csv(filename: str, rows: List[Dict[str, str]]) -> None:
     """
     Write updated show data to CSV.
     """
     fieldnames = [
         "show_name",
-        "found_title",
         "tvmaze_status",
-        "status_bucket",
         "next_known_airdate",
-        "next_season_airdate",
-        "notes",
     ]
 
     with open(filename, "w", newline="", encoding="utf-8") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
-
 
 def main() -> None:
     show_names = read_input_csv(INPUT_CSV)
@@ -260,7 +228,6 @@ def main() -> None:
 
     write_output_csv(OUTPUT_CSV, results)
     print(f"\nDone. Updated file written to: {OUTPUT_CSV}")
-
 
 if __name__ == "__main__":
     main()
