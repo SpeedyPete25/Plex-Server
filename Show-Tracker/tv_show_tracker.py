@@ -21,6 +21,17 @@ def safe_get(url: str, params: Optional[Dict[str, Any]] = None) -> Optional[Dict
         return None
 
 
+def _normalize_name_with_year(show_name: str) -> (str, Optional[int]):
+    """Extract base name and optional year string from values like 'Doctor Who (2023)'."""
+    import re
+
+    candidate = show_name.strip()
+    match = re.match(r"^(.*?)\s*\((\d{4})\)\s*$", candidate)
+    if match:
+        return match.group(1).strip(), int(match.group(2))
+    return candidate, None
+
+
 def search_show(show_name: str) -> Optional[Dict[str, Any]]:
     """
     Search for a show by name.
@@ -30,17 +41,33 @@ def search_show(show_name: str) -> Optional[Dict[str, Any]]:
     if not data:
         return None
 
-    # Prefer exact title match where possible
+    normalized_name, target_year = _normalize_name_with_year(show_name)
+
+    shows = [item.get("show") for item in data if isinstance(item.get("show"), dict)]
+
+    # Prefer exact title + year match where possible
+    if target_year is not None:
+        year_matches = [
+            show
+            for show in shows
+            if show.get("name", "").strip().lower() == normalized_name.lower()
+            and show.get("premiered", "").startswith(str(target_year))
+        ]
+        if year_matches:
+            return year_matches[0]
+
+    # Prefer exact title match where possible (with or without year suffix)
     exact_matches = [
-        item["show"]
-        for item in data
-        if item.get("show", {}).get("name", "").strip().lower() == show_name.strip().lower()
+        show
+        for show in shows
+        if show.get("name", "").strip().lower() == normalized_name.lower()
+        or show.get("name", "").strip().lower() == show_name.strip().lower()
     ]
     if exact_matches:
         return exact_matches[0]
 
     # Otherwise use the first result
-    return data[0].get("show")
+    return shows[0] if shows else None
 
 
 def get_show_details(show_id: int) -> Optional[Dict[str, Any]]:
@@ -138,8 +165,6 @@ def process_show(show_name: str) -> Dict[str, str]:
         "status_bucket": "",
         "next_known_airdate": "",
         "next_season_airdate": "",
-        "official_site": "",
-        "network": "",
         "notes": "",
     }
 
@@ -172,19 +197,11 @@ def process_show(show_name: str) -> Dict[str, str]:
     next_known_airdate = next_episode.get("airdate") if next_episode else None
     next_season_airdate = find_next_season_airdate(seasons, previous_season_number, next_episode)
 
-    network_name = ""
-    if details.get("network"):
-        network_name = details["network"].get("name", "")
-    elif details.get("webChannel"):
-        network_name = details["webChannel"].get("name", "")
-
     row["found_title"] = details.get("name", "")
     row["tvmaze_status"] = details.get("status", "")
     row["status_bucket"] = normalize_status(details.get("status"), next_episode)
     row["next_known_airdate"] = next_known_airdate or ""
     row["next_season_airdate"] = next_season_airdate or ""
-    row["official_site"] = details.get("officialSite", "") or ""
-    row["network"] = network_name
 
     if row["status_bucket"] == "Running" and not row["next_known_airdate"]:
         row["notes"] = "Show is marked running, but no next episode is currently listed"
@@ -223,8 +240,6 @@ def write_output_csv(filename: str, rows: List[Dict[str, str]]) -> None:
         "status_bucket",
         "next_known_airdate",
         "next_season_airdate",
-        "official_site",
-        "network",
         "notes",
     ]
 
