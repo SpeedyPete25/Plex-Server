@@ -186,13 +186,13 @@ def process_show(show_name: str) -> Dict[str, str]:
     row["official_site"] = details.get("officialSite", "") or ""
     row["network"] = network_name
 
-    if row["status_bucket"] == "running" and not row["next_known_airdate"]:
+    if row["status_bucket"] == "Running" and not row["next_known_airdate"]:
         row["notes"] = "Show is marked running, but no next episode is currently listed"
-    elif row["status_bucket"] == "renewed" and not row["next_season_airdate"]:
+    elif row["status_bucket"] == "Renewed" and not row["next_season_airdate"]:
         row["notes"] = "Upcoming episode exists, but next season premiere is not clearly identifiable"
-    elif row["status_bucket"] == "unconfirmed":
+    elif row["status_bucket"] == "To Be Determined":
         row["notes"] = "Future season/episode not yet confirmed"
-    elif row["status_bucket"] == "cancelled":
+    elif row["status_bucket"] == "Ended":
         row["notes"] = "Show appears ended"
 
     return row
