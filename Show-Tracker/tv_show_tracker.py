@@ -33,14 +33,22 @@ def search_show(show_name: str) -> Optional[Dict[str, Any]]:
     """
     Search for a show by name.
     Uses TVmaze search endpoint and returns the first strong match if available.
+    Tries multiple search strategies if initial search fails for year-suffixed shows.
     """
+    normalized_name, target_year = _normalize_name_with_year(show_name)
+    
+    # Try searching with the original name first
     data = safe_get(f"{BASE_URL}/search/shows", params={"q": show_name})
     if not data:
-        return None
-
-    normalized_name, target_year = _normalize_name_with_year(show_name)
+        # If that fails and we have a year, try searching just the base name
+        if target_year is not None:
+            data = safe_get(f"{BASE_URL}/search/shows", params={"q": normalized_name})
+        if not data:
+            return None
 
     shows = [item.get("show") for item in data if isinstance(item.get("show"), dict)]
+    if not shows:
+        return None
 
     # Prefer exact title + year match where possible
     if target_year is not None:
@@ -48,10 +56,24 @@ def search_show(show_name: str) -> Optional[Dict[str, Any]]:
             show
             for show in shows
             if show.get("name", "").strip().lower() == normalized_name.lower()
-            and show.get("premiered", "").startswith(str(target_year))
+            and (show.get("premiered") or "").startswith(str(target_year))
         ]
         if year_matches:
             return year_matches[0]
+        
+        # If no exact year match, try matching just on name with flexible year checking
+        # (in case the premiere year is close but not exact)
+        flexible_matches = [
+            show
+            for show in shows
+            if show.get("name", "").strip().lower() == normalized_name.lower()
+        ]
+        if flexible_matches:
+            # Sort by premiere date to get the one closest to our target year
+            flexible_matches.sort(
+                key=lambda s: abs(int((s.get("premiered") or "0")[:4] or 0) - target_year)
+            )
+            return flexible_matches[0]
 
     # Prefer exact title match where possible (with or without year suffix)
     exact_matches = [
