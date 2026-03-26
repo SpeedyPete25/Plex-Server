@@ -11,7 +11,7 @@ class ShowTrackerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("TV Show Tracker")
-        self.geometry("860x520")
+        self.geometry("600x820")
 
         self.show_names: List[str] = []
         self.build_ui()
@@ -48,7 +48,7 @@ class ShowTrackerGUI(tk.Tk):
         self.tree.heading("tvmaze_status", text="Status")
         self.tree.heading("next_known_airdate", text="Next Air Date")
 
-        self.tree.column("show_name", width=380, anchor="w")
+        self.tree.column("show_name", width=260, anchor="w")
         self.tree.column("tvmaze_status", width=120, anchor="center")
         self.tree.column("next_known_airdate", width=120, anchor="center")
 

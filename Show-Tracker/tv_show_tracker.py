@@ -206,8 +206,23 @@ def process_show(show_name: str) -> Dict[str, str]:
     next_known_airdate = next_episode.get("airdate") if next_episode else None
     next_season_airdate = find_next_season_airdate(seasons, previous_season_number, next_episode)
 
-    row["tvmaze_status"] = details.get("status", "")
+    tvmaze_status = details.get("status", "")
     row["next_known_airdate"] = next_known_airdate or ""
+
+    # If status is Running and next air date is within 1 week, show On Air
+    try:
+        if tvmaze_status.strip().lower() == "running" and next_known_airdate:
+            from datetime import date, timedelta
+
+            today = date.today()
+            next_date = date.fromisoformat(next_known_airdate)
+            if today <= next_date <= today + timedelta(days=7):
+                tvmaze_status = "On Air"
+    except ValueError:
+        # invalid date format, ignore and keep original status
+        pass
+
+    row["tvmaze_status"] = tvmaze_status
 
     return row
 
