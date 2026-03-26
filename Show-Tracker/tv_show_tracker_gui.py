@@ -11,9 +11,19 @@ class ShowTrackerGUI(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("TV Show Tracker")
-        self.geometry("600x820")
+        self.geometry("600x808")
 
         self.show_names: List[str] = []
+
+        # Force a theme that supports row tag backgrounds better across platforms
+        style = ttk.Style(self)
+        try:
+            style.theme_use('clam')
+        except tk.TclError:
+            pass
+        style.configure('Treeview', rowheight=24, fieldbackground='#ffffff', background='#ffffff')
+        style.map('Treeview', background=[('selected', '#4a6984')], foreground=[('selected', '#ffffff')])
+
         self.build_ui()
         self.reload_shows()
 
@@ -51,6 +61,13 @@ class ShowTrackerGUI(tk.Tk):
         self.tree.column("show_name", width=260, anchor="w")
         self.tree.column("tvmaze_status", width=120, anchor="center")
         self.tree.column("next_known_airdate", width=120, anchor="center")
+
+        # Tag colors for statuses (appearance can be adjusted)
+        self.tree.tag_configure("on_air", background="#d4ffdb", foreground="#000000")
+        self.tree.tag_configure("development", background="#e0d3ee", foreground="#000000")
+        self.tree.tag_configure("renewed", background="#d9eaff", foreground="#000000")
+        self.tree.tag_configure("cancelled", background="#ffd9d9", foreground="#000000")
+        self.tree.tag_configure("unconfirmed", background="#fff2cc", foreground="#000000")
 
         vsb = ttk.Scrollbar(self, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=vsb.set)
@@ -94,7 +111,27 @@ class ShowTrackerGUI(tk.Tk):
                 self.tree.insert('', 'end', values=(show_name, '', ''))
         else:
             for r in rows:
-                self.tree.insert('', 'end', values=(r.get('show_name', ''), r.get('tvmaze_status', ''), r.get('next_known_airdate', '')))
+                status = (r.get('tvmaze_status', '') or '').strip().lower()
+                if status == 'on air':
+                    tag = 'on_air'
+                elif status == 'in development':
+                    tag = 'development'
+                elif status == 'renewed' or status == 'running':
+                    tag = 'renewed'
+                elif status == 'ended' or status == 'cancelled':
+                    tag = 'cancelled'
+                elif status == 'unconfirmed' or status == 'to be determined':
+                    tag = 'unconfirmed'
+                else:
+                    tag = ''
+
+                status_text = r.get('tvmaze_status', '')
+                values = (r.get('show_name', ''), status_text, r.get('next_known_airdate', ''))
+
+                if tag:
+                    self.tree.insert('', 'end', values=values, tags=(tag,))
+                else:
+                    self.tree.insert('', 'end', values=values)
 
     def add_show(self):
         value = simpledialog.askstring("Add Show", "Enter show name:", parent=self)
