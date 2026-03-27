@@ -1,0 +1,34 @@
+# Auto-Download/tv_show_torrent_watcher_qbt.py config file
+# 1) Add your TV show names (at least partial match in torrent titles)
+# 2) Set one or more RSS feed URLs that publish torrent episodes
+# 3) Configure qBittorrent web UI credentials and network settings
+# 4) Run with: python Auto-Download/tv_show_torrent_watcher_qbt.py --config Auto-Download/config_qbt.yaml --run-once
+
+shows:
+  - name: "Rick and Morty"
+  - name: "The Expanse"
+  - name: "Attack on Titan"
+
+rss_feeds:
+  # Example: a public torrent RSS feed URL (must provide magnet links)
+  - "https://example.com/tv-rss-feed-1080p.xml"
+
+qbt:
+  host: "127.0.0.1"
+  port: 8080
+  username: "admin"
+  password: "adminadmin"
+  category: "TV"
+
+# Where qBittorrent stores downloaded files.
+save_path: "C:/Users/mfigm/Downloads/TV"
+
+# History file to avoid duplicate downloads by normalized title.
+history_path: "C:/Users/mfigm/Documents/Plex-Server/Auto-Download/downloaded_history_qbt.json"
+
+# Interval in seconds between RSS checks when not run-once.
+interval: 1800
+
+# Optional scripted override.
+run_once: false
+no_download: false
