@@ -5,23 +5,22 @@
 # 4) Run with: python Auto-Download/tv_show_torrent_watcher_qbt.py --config Auto-Download/config_qbt.yaml --run-once
 
 shows:
-  - name: "Rick and Morty"
-  - name: "The Expanse"
-  - name: "Attack on Titan"
+  - name: "Derry Girls"
+  - name: "Schitt's Creek"
 
 rss_feeds:
   # Example: a public torrent RSS feed URL (must provide magnet links)
-  - "https://example.com/tv-rss-feed-1080p.xml"
+  - "https://thepiratebay10.xyz/rss/new/208"
 
 qbt:
-  host: "127.0.0.1"
+  host: "192.168.0.101" # Or localhost
   port: 8080
   username: "admin"
   password: "adminadmin"
   category: "TV"
 
 # Where qBittorrent stores downloaded files.
-save_path: "C:/Users/mfigm/Downloads/TV"
+save_path: "Y:/New"
 
 # History file to avoid duplicate downloads by normalized title.
 history_path: "C:/Users/mfigm/Documents/Plex-Server/Auto-Download/downloaded_history_qbt.json"
@@ -30,5 +29,5 @@ history_path: "C:/Users/mfigm/Documents/Plex-Server/Auto-Download/downloaded_his
 interval: 1800
 
 # Optional scripted override.
-run_once: false
-no_download: false
+run_once: true
+no_download: true
